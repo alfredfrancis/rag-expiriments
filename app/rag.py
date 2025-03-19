@@ -1,5 +1,6 @@
 import time
 from typing import List, Dict
+from functools import lru_cache
 from langchain_postgres import PGVector
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import TextLoader, PyPDFLoader
@@ -9,8 +10,26 @@ from langchain.prompts import PromptTemplate
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_openai import ChatOpenAI
 from openai import OpenAI
+from langchain.embeddings import CacheBackedEmbeddings
+from langchain.storage import InMemoryByteStore
 
 from app.config import GEMINI_API_KEY, CONNECTION_STRING, COLLECTION_NAME
+
+base_embeddings = GoogleGenerativeAIEmbeddings(
+    google_api_key=GEMINI_API_KEY,
+    model="models/embedding-001"
+)
+
+# Create a byte store for caching embeddings
+store = InMemoryByteStore()
+
+# cached embedder that wraps the base embeddings
+cached_embedder = CacheBackedEmbeddings.from_bytes_store(
+    base_embeddings, 
+    store, 
+    namespace=base_embeddings.model,
+    query_embedding_cache = True
+)
 
 openai_client = OpenAI(
     api_key=GEMINI_API_KEY,
@@ -19,11 +38,7 @@ openai_client = OpenAI(
 
 class RAGApplication:
     def __init__(self):
-        # Use Google's embeddings for vector encoding
-        self.embeddings = GoogleGenerativeAIEmbeddings(
-            google_api_key=GEMINI_API_KEY,
-            model="models/embedding-001"
-        )
+        self.embeddings = cached_embedder
         
         self.vector_store = None
         self.text_splitter = RecursiveCharacterTextSplitter(
