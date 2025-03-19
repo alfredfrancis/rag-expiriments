@@ -9,14 +9,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.models import QueryRequest, QueryResponse, DocumentIngestResponse
 from app.rag import RAGApplication
 
-# Initialize FastAPI app
 app = FastAPI(
     title="RAG API with Gemini",
     description="API for document ingestion and querying using RAG with Google's Gemini API",
     version="1.0.0"
 )
 
-# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -25,16 +23,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize RAG application
 rag_app = RAGApplication()
 
-# Background task for document processing
 def process_uploaded_file(file_path: str, file_type: str, metadata: Dict):
     documents = rag_app.load_file(file_path, file_type, metadata)
     chunks_processed = rag_app.process_documents(documents)
     print(f"Processed {chunks_processed} chunks from {file_path}")
     
-    # Clean up temporary file
     try:
         os.remove(file_path)
     except Exception as e:
@@ -51,7 +46,6 @@ async def ingest_document(
 ):
     """Ingest a document into the RAG system."""
     
-    # Generate document ID if not provided
     if not document_id:
         document_id = str(uuid.uuid4())
     
@@ -92,7 +86,6 @@ async def ingest_document(
 
 @app.post("/query", response_model=QueryResponse)
 async def query_documents(request: QueryRequest):
-    """Query the RAG system with a question."""
     if not request.query.strip():
         raise HTTPException(status_code=400, detail="Query cannot be empty")
     
@@ -106,8 +99,7 @@ async def query_documents(request: QueryRequest):
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint."""
     return {"status": "healthy", "model": "gemini-2.0-flash"}
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)

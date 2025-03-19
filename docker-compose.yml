@@ -10,7 +10,7 @@ services:
         condition: service_healthy
     environment:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
-      - PG_CONNECTION_STRING=postgresql://postgres:postgres@postgres:5432/ragdb
+      - PG_CONNECTION_STRING=postgresql+psycopg://postgres:postgres@postgres:5432/ragdb
     networks:
       - rag-network
     restart: unless-stopped

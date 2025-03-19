@@ -1,6 +1,6 @@
 import time
 from typing import List, Dict
-from langchain_postgres.vectorstores import PGVector
+from langchain_postgres import PGVector
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import TextLoader, PyPDFLoader
 from langchain.schema import Document
@@ -12,7 +12,6 @@ from openai import OpenAI
 
 from app.config import GEMINI_API_KEY, CONNECTION_STRING, COLLECTION_NAME
 
-# Configure OpenAI client with Gemini API
 openai_client = OpenAI(
     api_key=GEMINI_API_KEY,
     base_url="https://generativelanguage.googleapis.com/v1beta/openai/"
@@ -47,9 +46,10 @@ class RAGApplication:
         """Initialize or connect to the PostgreSQL vector store."""
         try:
             self.vector_store = PGVector(
-                connection_string=CONNECTION_STRING,
-                embedding_function=self.embeddings,
-                collection_name=COLLECTION_NAME
+                connection=CONNECTION_STRING,
+                embeddings=self.embeddings,
+                collection_name=COLLECTION_NAME,
+                use_jsonb=True,
             )
             print("Successfully connected to PostgreSQL vector store")
         except Exception as e:
@@ -59,7 +59,7 @@ class RAGApplication:
                 documents=[],  # Start with empty documents
                 embedding=self.embeddings,
                 collection_name=COLLECTION_NAME,
-                connection_string=CONNECTION_STRING,
+                connection=CONNECTION_STRING,
             )
     
     def load_file(self, file_path: str, file_type: str, metadata: Dict = None) -> List[Document]:
@@ -67,12 +67,11 @@ class RAGApplication:
         try:
             if file_type == "pdf":
                 loader = PyPDFLoader(file_path)
-            else:  # Default to text file
+            else: 
                 loader = TextLoader(file_path)
                 
             documents = loader.load()
             
-            # Add metadata if provided
             if metadata:
                 for doc in documents:
                     doc.metadata.update(metadata)
@@ -88,10 +87,8 @@ class RAGApplication:
             return 0
         
         try:
-            # Split documents into chunks
             splits = self.text_splitter.split_documents(documents)
             
-            # Add documents to vector store
             self.vector_store.add_documents(splits)
             return len(splits)
         except Exception as e:
@@ -100,7 +97,7 @@ class RAGApplication:
     
     def setup_retrieval_chain(self, top_k: int = 4):
         """Set up the retrieval chain for answering questions."""
-        # Create a custom prompt template
+
         template = """
         You are a helpful assistant that answers questions based on the provided context.
         
@@ -117,7 +114,6 @@ class RAGApplication:
             input_variables=["context", "question"]
         )
         
-        # Create the retrieval QA chain
         retriever = self.vector_store.as_retriever(
             search_type="similarity",
             search_kwargs={"k": top_k}
