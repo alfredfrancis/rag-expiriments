@@ -12,8 +12,13 @@ from langchain_openai import ChatOpenAI
 from openai import OpenAI
 from langchain.embeddings import CacheBackedEmbeddings
 from langchain.storage import InMemoryByteStore
+from langchain.globals import set_llm_cache
+from langchain_community.cache import InMemoryCache
 
 from app.config import GEMINI_API_KEY, CONNECTION_STRING, COLLECTION_NAME
+
+# Set up cache for LLM calls
+set_llm_cache(InMemoryCache())
 
 base_embeddings = GoogleGenerativeAIEmbeddings(
     google_api_key=GEMINI_API_KEY,

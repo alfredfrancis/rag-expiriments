@@ -8,6 +8,7 @@ This is a Retrieval-Augmented Generation (RAG) application that uses FastAPI, La
 - Query API endpoint for asking questions about your documents
 - Background document processing
 - PostgreSQL vector storage for efficient semantic search
+- Caching for LLM calls and document embeddings
 - Docker containerization for easy deployment
 
 ## Prerequisites
